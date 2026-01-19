@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "AI Citation Readiness Checker",
+  "description": "Checks how AI-citable a blog page is.",
+  "version": "1.0",
+  "permissions": ["activeTab", "scripting"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+}

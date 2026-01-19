@@ -1,38 +1,66 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8" />
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 12px;
-      width: 300px;
-    }
-    h1 {
-      font-size: 16px;
-      margin-bottom: 8px;
-    }
-    .score {
-      font-size: 28px;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-    ul {
-      padding-left: 18px;
-    }
-    li {
-      font-size: 13px;
-      margin-bottom: 4px;
-    }
-  </style>
-</head>
-<body>
+function calculateScore(data) {
+  let score = 0;
+  const issues = [];
 
-<h1>AI Citation Readiness</h1>
-<div class="score" id="score">--</div>
+  if (data.hasDefinition) score += 20;
+  else issues.push("❌ No clear definition found");
 
-<ul id="results"></ul>
+  if (data.hasQuestions) score += 20;
+  else issues.push("❌ No question-based headings");
 
-<script src="popup.js"></script>
-</body>
-</html>
+  if (data.hasLists) score += 20;
+  else issues.push("❌ No lists or steps");
+
+  if (data.hasSummary) score += 15;
+  else issues.push("❌ No summary or key takeaways");
+
+  if (!data.promotionalTone) score += 25;
+  else issues.push("❌ Promotional language detected");
+
+  return { score, issues };
+}
+
+function showError(message) {
+  document.getElementById("score").innerText = "N/A";
+  const ul = document.getElementById("results");
+  ul.innerHTML = "";
+  const li = document.createElement("li");
+  li.innerText = message;
+  ul.appendChild(li);
+}
+
+chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+  if (!tabs || !tabs[0]) {
+    showError("No active tab detected");
+    return;
+  }
+
+  chrome.tabs.sendMessage(
+    tabs[0].id,
+    { action: "analyze" },
+    response => {
+      if (chrome.runtime.lastError) {
+        showError("Please refresh the page and try again");
+        return;
+      }
+
+      if (!response) {
+        showError("No data received from page");
+        return;
+      }
+
+      const output = calculateScore(response);
+      document.getElementById("score").innerText =
+        output.score + " / 100";
+
+      const ul = document.getElementById("results");
+      ul.innerHTML = "";
+
+      output.issues.forEach(issue => {
+        const li = document.createElement("li");
+        li.innerText = issue;
+        ul.appendChild(li);
+      });
+    }
+  );
+});
